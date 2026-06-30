@@ -30,10 +30,19 @@
 #define DHTTYPE DHT22
 
 // Configuración de tiempos
-#define MOTION_SAMPLE_INTERVAL 1000  // 1 segundo    
+#define MOTION_SAMPLE_INTERVAL 1000  // 1 segundo
 #define MAIN_INTERVAL 60000         // 1 minuto
-#define LED_BLINK_INTERVAL 500     
+#define LED_BLINK_INTERVAL 500
 #define PIR_CALIBRATION_TIME 30000  // 30 segundos de calibración
+
+// Configuración de batería (medición por ADC con divisor de tensión)
+// Cablea la salida de batería a GPIO35 a través de un divisor 2:1 (ej. 100k/100k).
+// Ajusta estos valores según tu módulo/química y mide el voltaje real para calibrar.
+#define BATTERY_ADC_PIN  35     // GPIO35 = ADC1_CH7 (solo-entrada; ADC1 es seguro con WiFi)
+#define BATTERY_DIVIDER  2.0f   // factor del divisor (Vbat = Vadc * factor)
+#define BATTERY_MIN_V    3.30f  // voltaje a 0%  (LiPo 1S descargada)
+#define BATTERY_MAX_V    4.20f  // voltaje a 100% (LiPo 1S cargada)
+#define BATTERY_SAMPLES  16     // muestras de ADC a promediar
 
 // Estados del sistema
 enum SystemState {
@@ -51,6 +60,8 @@ struct AmbientData {
     float temperature;
     float humidity;
     float light;
+    float batteryVoltage;
+    int batteryPercent;
     String timestamp;
 };
 
@@ -206,6 +217,8 @@ String createAmbientJsonString(const AmbientData& data) {
     json += "\"temperatura\":" + String(data.temperature) + ",";
     json += "\"humedad\":" + String(data.humidity) + ",";
     json += "\"luz\":" + String(data.light) + ",";
+    json += "\"bateria_v\":" + String(data.batteryVoltage, 2) + ",";
+    json += "\"bateria_pct\":" + String(data.batteryPercent) + ",";
     json += "\"timestamp\":\"" + data.timestamp + "\"";
     json += "}";
     return json;
@@ -248,12 +261,32 @@ bool checkPIRCalibration() {
     return pirCalibrated;
 }
 
+// Lee el voltaje de batería promediando varias muestras del ADC (con calibración de fábrica).
+float readBatteryVoltage() {
+    uint32_t mv = 0;
+    for (int i = 0; i < BATTERY_SAMPLES; i++) {
+        mv += analogReadMilliVolts(BATTERY_ADC_PIN);
+    }
+    mv /= BATTERY_SAMPLES;
+    return (mv / 1000.0f) * BATTERY_DIVIDER;
+}
+
+// Convierte voltaje a porcentaje (lineal, recortado a 0–100).
+int batteryPercent(float v) {
+    float pct = (v - BATTERY_MIN_V) / (BATTERY_MAX_V - BATTERY_MIN_V) * 100.0f;
+    if (pct < 0.0f) pct = 0.0f;
+    if (pct > 100.0f) pct = 100.0f;
+    return (int)(pct + 0.5f);
+}
+
 void checkSensors(AmbientData &data) {
     data.temperature = dht.readTemperature();
     data.humidity = dht.readHumidity();
     data.light = lightMeter.readLightLevel();
+    data.batteryVoltage = readBatteryVoltage();
+    data.batteryPercent = batteryPercent(data.batteryVoltage);
     data.timestamp = getFormattedTime();
-    
+
     if (isnan(data.humidity) || isnan(data.temperature) || data.light < 0) {
         currentState = STATE_SENSOR_ERROR;
         return;
@@ -279,12 +312,20 @@ void setup() {
     Wire.begin(21, 22);
     dht.begin();
     initPIR();
-    
+
+    // ADC de batería
+    analogReadResolution(12);
+    analogSetPinAttenuation(BATTERY_ADC_PIN, ADC_11db);  // rango ~0–3.3V en el pin
+    {
+        float vb = readBatteryVoltage();
+        Serial.printf("Batería (GPIO%d): %.2f V (%d%%)\n", BATTERY_ADC_PIN, vb, batteryPercent(vb));
+    }
+
     if (!lightMeter.begin()) {
         Serial.println("✗ Error BH1750");
         currentState = STATE_SENSOR_ERROR;
     }
-    
+
     connectToWiFi();
     initTime();
     initFirebase();
@@ -351,6 +392,7 @@ void loop() {
             Serial.printf("║ Humedad:     %5.1f %%\n", data.humidity);
             Serial.printf("║ Luz:         %5.1f lx\n", data.light);
         }
+        Serial.printf("║ Batería:     %5.2f V (%d%%)\n", data.batteryVoltage, data.batteryPercent);
         Serial.println("╚═══════════════════════");
         
         if (currentState != STATE_SENSOR_ERROR) {

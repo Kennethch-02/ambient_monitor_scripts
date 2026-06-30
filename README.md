@@ -38,6 +38,7 @@ This is the **producer** half of a two-repo product:
 | RGB LED — Red | **GPIO 25** | |
 | RGB LED — Green | **GPIO 26** | |
 | RGB LED — Blue | **GPIO 27** | |
+| Battery sense | **GPIO 35** | battery + → 2:1 divider (e.g. 100k/100k) → GPIO35; ADC1, input-only |
 
 ### Status-LED legend
 | LED | Meaning |
