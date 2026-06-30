@@ -2,11 +2,17 @@
   "rules": {
     "ambient_data": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": "auth != null && auth.uid === 'REPLACE_WITH_DEVICE_UID'",
+      "$ts": {
+        ".validate": "newData.hasChildren(['temperatura','humedad','luz','timestamp'])"
+      }
     },
     "motion_events": {
       ".read": true,
-      ".write": "auth != null"
+      ".write": "auth != null && auth.uid === 'REPLACE_WITH_DEVICE_UID'",
+      "$ts": {
+        ".validate": "newData.hasChildren(['detectado'])"
+      }
     },
     "$other": {
       ".read": false,
