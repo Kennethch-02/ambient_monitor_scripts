@@ -5,6 +5,8 @@ ambient light and motion** from a room and streams the readings to **Firebase Re
 where the [Ambient Monitor dashboard](https://github.com/Kennethch-02/ambient-monitor-dashboard)
 visualizes them live.
 
+**Live demo:** https://ambient.teonix.dev
+
 This is the **producer** half of a two-repo product:
 
 - **Firmware** (this repo) — `ambient_monitor_scripts` · ESP32 / PlatformIO / C++
