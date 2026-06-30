@@ -3,8 +3,13 @@
 #include <DHT.h>
 #include <BH1750.h>
 #include <WiFi.h>
-#include <FirebaseClient.h>
 #include <WiFiClientSecure.h>
+
+// FirebaseClient 2.x: enable the modules we use BEFORE including the library.
+#define ENABLE_USER_AUTH
+#define ENABLE_DATABASE
+#include <FirebaseClient.h>
+
 #include "time.h"
 
 // Credenciales (WiFi + Firebase) — definidas en include/secrets.h (gitignored).
@@ -54,9 +59,8 @@ DHT dht(DHT_PIN, DHTTYPE);
 BH1750 lightMeter;
 
 // Objetos para Firebase
-DefaultNetwork network;
 WiFiClientSecure ssl_client;
-AsyncClientClass aClient(ssl_client, getNetwork(network));
+AsyncClientClass aClient(ssl_client);
 FirebaseApp app;
 RealtimeDatabase Database;
 
