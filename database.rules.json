@@ -1,0 +1,16 @@
+{
+  "rules": {
+    "ambient_data": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "motion_events": {
+      ".read": true,
+      ".write": "auth != null"
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}

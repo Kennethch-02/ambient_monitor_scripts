@@ -7,16 +7,9 @@
 #include <WiFiClientSecure.h>
 #include "time.h"
 
-// Configuración WiFi
-#define WIFI_SSID ""
-#define WIFI_PASSWORD ""
-
-// Configuración Firebase
-#define FIREBASE_PROJECT_ID ""
-#define API_KEY ""
-#define DATABASE_URL ""
-#define DEVICE_EMAIL ""
-#define DEVICE_PASSWORD ""
+// Credenciales (WiFi + Firebase) — definidas en include/secrets.h (gitignored).
+// Copia include/secrets.example.h a include/secrets.h y rellena tus valores reales.
+#include "secrets.h"
 
 // Configuración NTP
 #define NTP_SERVER "pool.ntp.org"
